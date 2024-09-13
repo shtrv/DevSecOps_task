@@ -41,11 +41,10 @@ custom_gather() {
 
 # Проверка формата даты
 validate_date() {
-  date -d "$1" +"%Y-%m-%d" &> /dev/null
-  if [ $? -ne 0 ]; then
-    echo "Ошибка: неверный формат даты. Используйте формат YYYY-MM-DD."
-    exit 1
-  fi
+    if ! date -d "$1" "+%Y-%m-%d" &>/dev/null; then
+        echo "Ошибка: неверный формат даты. Используйте формат YYYY-MM-DD."
+        exit 1
+    fi
 }
 
 # Пользовательский ввод даты
