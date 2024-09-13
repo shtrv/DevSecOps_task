@@ -1,42 +1,27 @@
 #!/bin/bash
 
+# Временные директории
+EXTRACTION_DIR="/tmp/extraction"
+COMMON_DIR="$EXTRACTION_DIR/common"
+SEVERE_DIR="$EXTRACTION_DIR/severe"
+
 # Функция для сбора технической информации о системе
 custom_gather() {
-  local output_file=$1
+    local host_info="$COMMON_DIR/host_info"
+    mkdir -p "$host_info"
 
-  echo "Собираю информацию о системе..."
+    echo "Сбор информации о системе..."
 
-  # Системная информация
-  echo "Системная информация:" > "$output_file"
-  uname -a >> "$output_file"
-  echo "" >> "$output_file"
+    uname -a > "$host_info/uname.txt"
+    df -h > "$host_info/disk_usage.txt"
+    free -h > "$host_info/memory.txt"
+    ps aux > "$host_info/processes.txt"
+    netstat -tuln > "$host_info/network_connections.txt"
+    uptime > "$host_info/uptime.txt"
+    ip addr show > "$host_info/ip_addr.txt"
+    lscpu > "$host_info/lscpu.txt"
 
-  # Информация о ЦПУ
-  echo "Информация о ЦПУ:" >> "$output_file"
-  lscpu >> "$output_file"
-  echo "" >> "$output_file"
-
-  # Информация о памяти
-  echo "Информация о памяти:" >> "$output_file"
-  free -h >> "$output_file"
-  echo "" >> "$output_file"
-
-  # Информация о файловой системе
-  echo "Информация о файловой системе:" >> "$output_file"
-  df -h >> "$output_file"
-  echo "" >> "$output_file"
-
-  # Список работающих процессов
-  echo "Список процессов:" >> "$output_file"
-  ps aux --sort=-%mem | head -n 20 >> "$output_file"
-  echo "" >> "$output_file"
-
-  # Информация о сети
-  echo "Сетевые интерфейсы:" >> "$output_file"
-  ip addr show >> "$output_file"
-  echo "" >> "$output_file"
-
-  echo "Техническая информация собрана в $output_file"
+    echo "Информация о хосте собрана."
 }
 
 # Проверка формата даты
@@ -55,9 +40,9 @@ validate_date "$user_date"
 # Получаем текущую дату
 current_date=$(date +"%Y-%m-%d")
 
-# Создаём директории для вывода
-mkdir -p /tmp/extraction/common
-mkdir -p /tmp/extraction/severe
+# Создание временных директорий
+mkdir -p "$COMMON_DIR"
+mkdir -p "$SEVERE_DIR"
 
 # Сбор всех журналов с указанной даты
 echo "Собираем журналы с $user_date до $current_date..."
