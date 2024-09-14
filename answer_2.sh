@@ -41,38 +41,45 @@ create_temp_dirs() {
     mkdir -p "$COMMON_DIR" "$SEVERE_DIR"
 }
 
+gather_logs() {
+    local start_date="$1"
+    local end_date="$2"
 
-# Сбор всех журналов с указанной даты
-echo "Сбор журналов с $user_date до $current_date..."
+    echo "Сбор журналов с $start_date до $end_date..."
 
-for service_dir in /opt/app-x/service-*; do
-  service_name=$(basename "$service_dir")
-  
-  # Копируем файлы журналов по датам
-  find "$service_dir" -type f -name "*$user_date*" -or -newermt "$user_date" ! -newermt "$current_date" -exec cp {} /tmp/extraction/common/ \;
-  find /opt/app-x/ -type f -name "*.log" -newermt "$user_date" ! -newermt "$current_date + 1 day" -exec cp --parents {} /tmp/extraction/common/ \;
-done
+    for service_dir in /opt/app-x/service-*; do
+        if [[ -d "$service_dir" ]]; then
+            service_name=$(basename "$service_dir")
+            
+            # Копируем файлы журналов по датам
+            find "$service_dir" -type f -name "*$start_date*" -or -newermt "$start_date" ! -newermt "$end_date" -exec cp --parents {} "$COMMON_DIR" \;
+        else
+            echo "Предупреждение: директория $service_dir не найдена."
+        fi
+    done
+}
 
-
-
-
-# Обработка файлов с уровнем SEVERE за один день
-echo "Собираем данные уровня SEVERE за $user_date..."
-
-for service_dir in /opt/app-x/service-*; do
-  service_name=$(basename "$service_dir")
-  persistent_log="$service_dir/persistent-debug.log"
-
-  if [ -f "$persistent_log" ]; then
-    grep "^$user_date.*\[LOG_LEVEL: SEVERE\]" "$persistent_log" > "/tmp/extraction/severe/${service_name}_severe_$user_date.log"
+gather_severe_logs() {
+    local log_date="$1"
     
-    # (*) Замена $FOO на ${FOO} в severe логах
-    sed -i 's/\$\([A-Za-z_][A-Za-z0-9_]*\)/${\1}/g' "/tmp/extraction/severe/${service_name}_severe_$user_date.log"
-  fi
-done
+    echo "Сбор данных уровня SEVERE за $log_date..."
 
+    for service_dir in /opt/app-x/service-*; do
+        if [[ -d "$service_dir" ]]; then
+            service_name=$(basename "$service_dir")
+            persistent_log="$service_dir/persistent-debug.log"
 
-
+            if [[ -f "$persistent_log" ]]; then
+                grep "^$log_date.*\[LOG_LEVEL: SEVERE\]" "$persistent_log" > "$SEVERE_DIR/${service_name}_severe_$log_date.log"
+                
+                # (*) Замена $FOO на ${FOO} в severe логах
+                sed -i 's/\$\([A-Za-z_][A-Za-z0-9_]*\)/${\1}/g' "$SEVERE_DIR/${service_name}_severe_$log_date.log"
+            else
+                echo "Предупреждение: файл $persistent_log не найден."
+            fi
+        fi
+    done
+}
 
 archive_data() {
     local password="$1"
