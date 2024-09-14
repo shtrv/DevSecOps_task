@@ -26,15 +26,19 @@ custom_gather() {
 
 # Проверка формата даты
 validate_date() {
-    if ! date -d "$1" "+%Y-%m-%d" &>/dev/null; then
+    if ! parsed_date=$(date -d "$1" "+%Y-%m-%d" 2>/dev/null); then
         echo "Ошибка: неверный формат даты. Используйте формат YYYY-MM-DD."
+        exit 1
+    fi
+    
+    if [[ "$1" != "$parsed_date" ]]; then
+        echo "Ошибка: неверная дата."
         exit 1
     fi
 }
 
 # Пользовательский ввод даты
-echo "Введите дату в формате YYYY-MM-DD:"
-read user_date
+read -p "Введите дату в формате YYYY-MM-DD: " user_date
 validate_date "$user_date"
 
 # Получаем текущую дату
@@ -45,7 +49,10 @@ mkdir -p "$COMMON_DIR"
 mkdir -p "$SEVERE_DIR"
 
 # Сбор всех журналов с указанной даты
-echo "Собираем журналы с $user_date до $current_date..."
+echo "Сбор журналов с $user_date до $current_date..."
+
+
+
 
 for service_dir in /opt/app-x/service-*; do
   service_name=$(basename "$service_dir")
